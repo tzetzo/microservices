@@ -1,0 +1,44 @@
+# Independent from K8s - runs outside of our Cluster
+# need to install skaffold https://skaffold.dev/docs/install
+apiVersion: skaffold/v2alpha3
+kind: Config
+deploy:
+  kubectl: # does 3 things: applies the .yaml files in the listed folder on skaffold start, update of any of the files, delete the pods on skaffold stop;
+    manifests:
+      - ./infra/k8s/* # where all .yaml files are
+build:
+  local:
+    push: false # tells skaffold not to push the Images it builds to docker hub
+  artifacts:
+    - image: tzetzo/auth
+      context: auth # tells skaffold to watch the "auth" folder for changes
+      docker:
+        dockerfile: Dockerfile
+      sync:
+        manual:
+          - src: "src/**/*.ts" # skaffold will update our Pod with changes from these files; otherwise it will re-create the Image & update the Deployment
+            dest: .
+    - image: tzetzo/client
+      context: client
+      docker:
+        dockerfile: Dockerfile
+      sync:
+        manual:
+          - src: "**/*.js"
+            dest: .
+    - image: tzetzo/tickets
+      context: tickets
+      docker:
+        dockerfile: Dockerfile
+      sync:
+        manual:
+          - src: "src/**/*.ts"
+            dest: .
+    - image: tzetzo/orders
+      context: orders
+      docker:
+        dockerfile: Dockerfile
+      sync:
+        manual:
+          - src: "src/**/*.ts"
+            dest: .

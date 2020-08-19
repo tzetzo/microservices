@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: orders-mongo-depl # deployment name
+spec:
+  replicas: 1 # number of Pods to deploy
+  selector:
+    matchLabels:
+      app: orders-mongo
+  template:
+    metadata:
+      labels:
+        app: orders-mongo
+    spec:
+      containers:
+        - name: orders-mongo
+          image: mongo # image to use for the deployment
+---
+# Service to expose a set of Pods to the other Pods in the Cluster
+apiVersion: v1
+kind: Service
+metadata:
+  name: orders-mongo-srv # service name -> used instead of URL in our express apps
+spec:
+  #type: ClusterIP # type of Service we create -> K8s creates ClusterIP by default
+  selector:
+    app: orders-mongo # the pods that the service should expose - look above in Deployment Service under "metadata:labels:app"
+  ports:
+    - name: db
+      protocol: TCP
+      port: 27017 # the port our Service should listen to; most times no need to be different from targetPort
+      targetPort: 27017 # the default port MongoDB uses;

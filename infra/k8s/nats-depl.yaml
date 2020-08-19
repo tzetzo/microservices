@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nats-depl # deployment name
+spec:
+  replicas: 1 # number of Pods to deploy
+  selector:
+    matchLabels:
+      app: nats
+  template:
+    metadata:
+      labels:
+        app: nats
+    spec:
+      containers:
+        - name: nats
+          image: nats-streaming:0.17.0 # image to use for the deployment
+          args:
+            [
+              "-p",
+              "4222",
+              "-m",
+              "8222",
+              "-hbi",
+              "5s",
+              "-hbt",
+              "5s",
+              "-hbf",
+              "2",
+              "-SD",
+              "-cid",
+              "ticketing",
+            ]
+---
+# Service to expose a set of Pods to the other Pods in the Cluster
+apiVersion: v1
+kind: Service
+metadata:
+  name: nats-srv # service name -> used instead of URL in our express apps
+spec:
+  #type: ClusterIP # type of Service we create -> K8s creates ClusterIP by default
+  selector:
+    app: nats # the pods that the service should expose - look above in Deployment Service under "metadata:labels:app"
+  ports:
+    - name: client
+      protocol: TCP
+      port: 4222 # the port our Service should listen to; most times no need to be different from targetPort
+      targetPort: 4222 # the port our express app uses; this is where we want to send traffic to;
+    - name: monitoring
+      protocol: TCP
+      port: 8222
+      targetPort: 8222

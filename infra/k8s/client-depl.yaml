@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: client-depl # deployment name
+spec:
+  replicas: 1 # number of Pods to deploy
+  selector:
+    matchLabels:
+      app: client
+  template:
+    metadata:
+      labels:
+        app: client
+    spec:
+      containers:
+        - name: client
+          image: tzetzo/client # image to use for the deployment
+---
+# Service to expose a set of Pods to the other Pods in the Cluster
+apiVersion: v1
+kind: Service
+metadata:
+  name: client-srv # service name -> used instead of URL in our express apps
+spec:
+  #type: ClusterIP # type of Service we create -> K8s creates ClusterIP by default
+  selector:
+    app: client # the pods that the service should expose - look above in Deployment Service under "metadata:labels:app"
+  ports:
+    - name: client
+      protocol: TCP
+      port: 3000 # the port our Service should listen to; most times no need to be different from targetPort
+      targetPort: 3000 # the port our Next.js app uses; this is where we want to send traffic to;

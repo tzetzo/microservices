@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-depl # deployment name
+spec:
+  replicas: 1 # number of Pods to deploy
+  selector:
+    matchLabels:
+      app: auth
+  template:
+    metadata:
+      labels:
+        app: auth
+    spec:
+      containers:
+        - name: auth
+          image: tzetzo/auth # image to use for the deployment
+          env: # list of all env vars we want access to inside this container
+            - name: MONGO_URI
+              value: "mongodb://auth-mongo-srv:27017/auth"
+            - name: JWT_KEY # the name under which the env var will be available inside the container
+              valueFrom:
+                secretKeyRef:
+                  name: jwt-secret # the name of the secret as created with "kubectl create secret generic jwt-secret --from-literal=JWT_KEY=nik8c28329n1zeb09m"
+                  key: JWT_KEY # the key from the secret as created with "kubectl create secret generic jwt-secret --from-literal=JWT_KEY=nik8c28329n1zeb09m"
+---
+# Service to expose a set of Pods to the other Pods in the Cluster
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-srv # service name -> used instead of URL in our express apps
+spec:
+  #type: ClusterIP # type of Service we create -> K8s creates ClusterIP by default
+  selector:
+    app: auth # the pods that the service should expose - look above in Deployment Service under "metadata:labels:app"
+  ports:
+    - name: auth
+      protocol: TCP
+      port: 3000 # the port our Service should listen to; most times no need to be different from targetPort
+      targetPort: 3000 # the port our express app uses; this is where we want to send traffic to;

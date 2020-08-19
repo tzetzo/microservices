@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tickets-depl # deployment name
+spec:
+  replicas: 1 # number of Pods to deploy
+  selector:
+    matchLabels:
+      app: tickets
+  template:
+    metadata:
+      labels:
+        app: tickets
+    spec:
+      containers:
+        - name: tickets
+          image: tzetzo/tickets # image to use for the deployment
+          env: # list of all env vars we want access to inside this container
+            - name: JWT_KEY # the name under which the env var will be available inside the container
+              valueFrom:
+                secretKeyRef:
+                  name: jwt-secret # the name of the secret as created with "kubectl create secret generic jwt-secret --from-literal=JWT_KEY=nik8c28329n1zeb09m"
+                  key: JWT_KEY # the key from the secret as created with "kubectl create secret generic jwt-secret --from-literal=JWT_KEY=nik8c28329n1zeb09m"
+            - name: MONGO_URI
+              value: "mongodb://tickets-mongo-srv:27017/tickets"
+            - name: NATS_CLIENT_ID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: NATS_URL
+              value: "http://nats-srv:4222"
+            - name: NATS_CLUSTER_ID
+              value: ticketing
+---
+# Service to expose a set of Pods to the other Pods in the Cluster
+apiVersion: v1
+kind: Service
+metadata:
+  name: tickets-srv # service name -> used instead of URL in our express apps
+spec:
+  #type: ClusterIP # type of Service we create -> K8s creates ClusterIP by default
+  selector:
+    app: tickets # the pods that the service should expose - look above in Deployment Service under "metadata:labels:app"
+  ports:
+    - name: tickets
+      protocol: TCP
+      port: 3000 # the port our Service should listen to; most times no need to be different from targetPort
+      targetPort: 3000 # the port our express app uses; this is where we want to send traffic to;

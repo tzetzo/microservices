@@ -1,0 +1,29 @@
+# make sure Ingress NGINX is installed -> https://kubernetes.github.io/ingress-nginx/deploy/#provider-specific-steps
+apiVersion: extensions/v1beta1
+kind: Ingress # the Ingress Controller
+metadata:
+  name: ingress-srv # Ingress Controller name
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/use-regex: "true" # allows the use of regex below
+spec:
+  rules:
+    - host: ticketing.dev # access the app from the Browser! the following config is tied to posts.com -> update C:\Windows\System32\drivers\etc\hosts with "127.0.0.1 posts.com"
+      http:
+        paths:
+          - path: /api/users/?(.*) # paths are matched in order
+            backend:
+              serviceName: auth-srv # the name of the ClusterIP Service to use
+              servicePort: 3000
+          - path: /api/tickets/?(.*)
+            backend:
+              serviceName: tickets-srv
+              servicePort: 3000
+          - path: /api/orders/?(.*)
+            backend:
+              serviceName: orders-srv
+              servicePort: 3000
+          - path: /?(.*) # catch all path
+            backend:
+              serviceName: client-srv # the name of the ClusterIP Service to use
+              servicePort: 3000
